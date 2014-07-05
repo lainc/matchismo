@@ -32,6 +32,11 @@
     return [[PlayingCard rankStrings][self.rank] stringByAppendingString:self.suit];
 }
 
+- (NSString *)description
+{
+    return self.contents;
+}
+
 - (void)setSuit:(NSString *)suit
 {
     if ([[PlayingCard validSuits] containsObject:suit]) {

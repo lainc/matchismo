@@ -17,6 +17,8 @@
 @property (strong, nonatomic) IBOutletCollection(UIButton) NSArray *cardButtons;
 @property (weak, nonatomic) IBOutlet UILabel *scoreLabel;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *modeSelector;
+@property (strong, nonatomic)NSMutableArray *chosenCards;
+@property (weak, nonatomic) IBOutlet UILabel *statusLabel;
 
 @end
 
@@ -37,13 +39,16 @@
     return [[PlayingCardDeck alloc] init];
 }
     
-- (IBAction)touchDealButton:(UIButton *)sender {
+- (IBAction)touchDealButton:(UIButton *)sender
+{
     self.modeSelector.enabled = YES;
     self.game = nil;
+    [self.statusLabel setText:@""];
     [self updateUI];
 }
 
-- (IBAction)changeModeSelector:(UISegmentedControl *)sender {
+- (IBAction)changeModeSelector:(UISegmentedControl *)sender
+{
     self.game.maxMatchingCards = [[sender titleForSegmentAtIndex:sender.selectedSegmentIndex] integerValue];
 }
 
@@ -52,6 +57,7 @@
     self.modeSelector.enabled = NO;
     int cardIndex = [self.cardButtons indexOfObject:sender];
     [self.game chooseCardAtIndex:cardIndex];
+    [self updateStatusLabel:cardIndex];
     [self updateUI];
 }
 
@@ -67,6 +73,43 @@
         cardButton.enabled = !card.matched;
     }
     self.scoreLabel.text = [NSString stringWithFormat:@"Score: %d", self.game.score];
+}
+
+- (void)updateStatusLabel:(int)cardIndex
+{
+    Card *card = [self.game cardAtIndex:cardIndex];
+    NSString *statusText;
+    
+    if (!card.isChosen) {
+        statusText = @"";
+        [self.chosenCards removeObject:card];
+    } else if (card.isMatched) {
+        statusText = [NSString stringWithFormat:@"Matched %@%@ for %d points.",
+                      [self.chosenCards componentsJoinedByString:@""],
+                      card,
+                      4 * [card match:self.chosenCards]];
+        [self.chosenCards removeAllObjects];
+    } else {
+        Card *firstCard = [self.chosenCards firstObject];
+        if (!firstCard || firstCard.isChosen) {
+            statusText = [card description];
+            [self.chosenCards addObject:card];
+        } else {
+            statusText = [NSString stringWithFormat:@"%@%@ don't match! Lose 2 points!",
+                          [self.chosenCards componentsJoinedByString:@""],
+                          card];
+            [self.chosenCards removeAllObjects];
+            [self.chosenCards addObject:card];
+        }
+    }
+        
+    [self.statusLabel setText:statusText];
+}
+
+- (NSMutableArray *)chosenCards
+{
+    if (!_chosenCards) _chosenCards = [[NSMutableArray alloc] initWithCapacity:self.game.maxMatchingCards];
+    return _chosenCards;
 }
 
 - (NSString *)titleForCard:(Card *)card
